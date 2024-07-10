@@ -12,9 +12,11 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class PasswordSubscriber implements EventSubscriberInterface
 {
-    public function __construct(private UserPasswordHasherInterface $hasher)
-    {
+    private UserPasswordHasherInterface $hasher;
 
+    public function __construct(UserPasswordHasherInterface $hasher)
+    {
+        $this->hasher = $hasher;
     }
 
     public function hashPassword(ViewEvent $event): void
@@ -23,11 +25,27 @@ class PasswordSubscriber implements EventSubscriberInterface
 
         $method = $event->getRequest()->getMethod();
 
-        if(!$entity instanceof User || !(in_array($method, [Request::METHOD_POST, Request::METHOD_PATCH]))) return;
+        if(!$entity instanceof User ||
+            !(in_array($method, [Request::METHOD_POST, Request::METHOD_PUT], true))) {//QUITO EL PATCH
+            return;
+        }
 
-        $hashedPassword = $this->hasher->hashPassword($entity, $entity->getPassword());
+        $data = json_decode($event->getRequest()->getContent(), true);
 
-        $entity->setPassword($hashedPassword);
+        if(isset($data['password'])) {
+            $hashedPassword = $this->hasher->hashPassword($entity, $entity->getPassword());
+
+            $entity->setPassword($hashedPassword);
+        }
+
+        /*$password = $entity->getPassword();
+
+        if(!empty($password)) {
+            $hashedPassword = $this->hasher->hashPassword($entity, $password);
+
+            $entity->setPassword($hashedPassword);
+        }*/
+
     }
 
     public static function getSubscribedEvents(): array

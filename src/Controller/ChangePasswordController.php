@@ -15,9 +15,24 @@ class ChangePasswordController extends AbstractController
 
     public function __invoke(Request $request, $data)
     {
-        if(null === $request->request->get('password'))
-            return $this->changePasswordHandler->updatePassword($data);
+        $requestData = json_decode($request->getContent(), true);
 
-        return $this->changePasswordHandler->updatePassword($request->request->get('password'));
+        if (isset($requestData['password'])) {
+            return $this->changePasswordHandler->updatePassword($data, $requestData['password']);
+        }
+
+        if (isset($requestData['name'])) {
+            return $this->changePasswordHandler->updateName($data, $requestData['name']);
+        }
+
+        return $data;
+        /*if (null === $request->request->get('name')) {
+            if (null === $request->request->get('password'))
+                return $this->changePasswordHandler->updatePassword($data);
+
+            return $this->changePasswordHandler->updatePassword($request->request->get('password'));
+        }
+
+        return $this->changePasswordHandler->updateName($request->request->get('name'));*/
     }
 }
