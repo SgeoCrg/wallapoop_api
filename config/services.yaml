@@ -19,6 +19,12 @@ services:
             - '../src/DependencyInjection/'
             - '../src/Entity/'
             - '../src/Kernel.php'
+#lo quito por que en el original no está
+    #App\Controller\ProductUploadController:
+        #arguments:
+            #$entityManager: '@doctrine.orm.entity_manager'
+            #$security: '@security.helper'
+#lo quito hasta aquí
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

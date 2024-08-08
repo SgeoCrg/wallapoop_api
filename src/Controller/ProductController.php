@@ -9,22 +9,25 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Serializer\SerializerInterface;
 
-class productController extends AbstractController
+class ProductController extends AbstractController
 {
     private $productRepository;
+    private $serializer;
 
-    public function __construct(ProductRepository $productRepository)
+    public function __construct(ProductRepository $productRepository, SerializerInterface $serializer)
     {
         $this->productRepository = $productRepository;
+        $this->serializer = $serializer;
     }
 
-    #[Route('/api/products', name: 'product_list', methods: ['GET'])]
-    public function listProducts(): JsonResponse
+    #[Route('/api/products', name: 'list_products', methods: ['GET'])]
+    public function __invoke(): JsonResponse
     {
-        $products = $this->productRepository->findAllProducts();
-
-        return new JsonResponse($products);
+        $products = $this->productRepository->findAll();
+        $data =  $this->serializer->normalize($products, null, ['groups' => 'read:product']);
+        return new JsonResponse($data);
     }
 
     #[Route('/api/products', name: 'create_product', methods: ['POST'])]

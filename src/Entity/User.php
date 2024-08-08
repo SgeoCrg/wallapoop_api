@@ -64,6 +64,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      */
     #[ORM\OneToMany(targetEntity: Product::class, mappedBy: 'user', orphanRemoval: true)]
     #[Groups(['read'])]
+    #[MaxDepth(1)]
     private Collection $products;
 
     #[ORM\Column]
@@ -128,7 +129,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         if (!$this->products->contains($product)) {
             $this->products->add($product);
-            $product->setUser($this);
+            if($product->getUser() !== $this)
+               $product->setUser($this);
         }
 
         return $this;

@@ -12,6 +12,7 @@ use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
+use App\Controller\ProductController;
 use App\Controller\ProductModifyController;
 use App\Controller\ProductUploadController;
 use App\Entity\Traits\CommonDate;
@@ -28,11 +29,14 @@ use Vich\UploaderBundle\Mapping\Annotation as Vich;
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
 #[ApiResource(
     operations: [
-        new GetCollection(),
+        new GetCollection(
+            controller: ProductController::class,
+            deserialize: false,
+        ),
         new Get(),
         new Post(
             controller: ProductUploadController::class,
-            deserialize: false
+            deserialize: false,
         ),
         new Patch(),
         new Delete()
@@ -167,7 +171,11 @@ class Product
 
     public function setUser(?User $user): static
     {
-        $this->user = $user;
+        if($this->user !== $user)
+           $this->user = $user;
+
+           if($user !== null && !$user->getProducts()->contains($this)) 
+               $user->addProduct($this);
 
         return $this;
     }
@@ -184,6 +192,9 @@ class Product
     {
         if (!$this->hashtags->contains($hashtag)) {
             $this->hashtags->add($hashtag);
+
+            if(!$hashtag->getProducts()->contains($this))
+                $hashtag->addProducts($this);
         }
 
         return $this;
@@ -203,7 +214,12 @@ class Product
 
     public function setStatus(?Status $status): static
     {
-        $this->status = $status;
+         if($this->status !== $status) 
+             $this->status = $status;
+
+             if($status !== null && !$status->getProducts()->contains($this)) {
+                 $status->addProduct($this);
+             }
 
         return $this;
     }
