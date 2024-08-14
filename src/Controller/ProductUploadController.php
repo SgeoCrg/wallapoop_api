@@ -2,57 +2,65 @@
 
 namespace App\Controller;
 
+use App\Entity\User;
 use App\Entity\Status;
 use App\Entity\Product;
+use App\Entity\Hashtag;
+use App\Repository\StatusRepository;
+use App\Repository\ProductRepository;
+use App\Repository\UserRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\JsonResponse;
-//use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Annotation\Route;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Annotation\MaxDepth;
 use Symfony\Component\Serializer\SerializerInterface;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Ramsey\Uuid\Uuid;
 
 class ProductUploadController extends AbstractController
 {
     private EntityManagerInterface $entityManager;
     private Security $security;
     private SerializerInterface $serialize;
+    private LoggerInterface $logger;
+    private StatusRepository $statusRepository;
+    private UserRepository $userRepository;
+    private ProductRepository $productRepository;
 
-    public function __construct(EntityManagerInterface  $entityManager, Security $security, SerializerInterface $serializer) {
+    private $uploadDirectory;
+
+    public function __construct(EntityManagerInterface  $entityManager, Security $security, SerializerInterface $serializer, LoggerInterface $logger, 
+            StatusRepository $statusRepository, UserRepository $userRepository, ProductRepository $productRepository, ParameterBagInterface $params) {
         $this->entityManager = $entityManager;
 	$this->security = $security;
 	$this->serializer = $serializer;
+        $this->logger = $logger;
+        $this->statusRepository = $statusRepository;
+        $this->userRepository = $userRepository;
+        $this->productRepository = $productRepository;
+        $this->uploadDirectory = $params->get('kernel.project_dir') . '/public/images/products';
     }
 
 	#[ROUTE('/api/products', name: 'create_product', methods: ['POST'])]
 	#[MaxDepth(1)]
     public function __invoke(Request $request)
     {
-        //dd($request->files->get('file'));
         $product = new Product();
 
-	error_log('recibido el request'. print_r($request, true));
-	ini_set('memory_limit', '512M');
-	//parte nueva
-	$data = json_decode($request->getContent(), true);
-        $jsondata = $request->getContent();
+	//parte nueva nueva
 
-        error_log('json recibido: '. $jsondata);
+        if($request->headers->get('Content-Type') && strpos($request->headers->get('Content-Type'), 'multipart/form-data') !== false) {
+           $data = $request->request->all();
+           $files = $request->files->all();
 
-//        try {
-//            $product = $this->serializer->deserialize($jsondata, Product::class, 'json');
-//        } catch (NotEncodableValueException $e) {
-//            return new JsonResponse(['error' => 'Invalid JSON data: ' . $e->getMessage()],
-//                JsonResponse::HTTP_BAD_REQUEST);
-//        }
-
-        if(json_last_error() !== JSON_ERROR_NONE) {
-            return JsonResponse(['error' => 'Invalid JSON'], JsonResponse::HTTP_BAD_REQUEST);
-        }
+           if(!$data) { return new JsonResponse(['error' => 'Invalid data'], JsonResponse::HTTP_BAD_REQUEST); }
 
 	$product->setName($data['name'] ?? '')
             ->setPrice($data['price'] ?? 0)
@@ -60,42 +68,85 @@ class ProductUploadController extends AbstractController
 
         if(isset($data['description'])) { $product->setDescription($data['description']); }
 
-        if(isset($data['status'])) { 
-	    $statusId =  (int) basename($data['status']);
-            $status= $this->entityManager->getRepository(Status::class)->find($statusId);
-	     if($status) {
-		$product->setStatus($status); 
-	     }
-	}
-	/* PARA DESPUES*/
-	//$user = $this->security->getUser();
-	error_log('antes de coger user ' . print_r($product, true));
-        $user =  $this->getUser();
-	if($user instanceOf UserInterface) {/*\App\Entity\User*/
-	    $product->setUser($user);
-	} else {
-	    throw new \Exception('user not logged');
-	}
-	//$product->setUser($user);
+        if(isset($data['hashtag'])) {
+            $hashtagArray = $data['hashtag'];
+            $hashData = array_filter(explode('#', $hashtagArray));
 
-	error_log('persistiendo producto' . print_r($product, true));
-	$this->entityManager->persist($product);
-	$this->entityManager->flush();
-	error_log(print_r($user, true));
+            foreach($hashData as $hashtagName) {
+                $hashtagName = trim($hashtagName);
+
+                if($hashtagName) {
+                    if(strpos($hashtagName, '#') === 0) {
+                        $hashtagName = substr($hashtagName, 1);
+                    }
+
+                    $hashtag = $this->entityManager->getRepository(Hashtag::class)->findOneBy(['hashtag' => $hashtagName]);
+
+                    if(!$hashtag) {
+                        $hashtag = new Hashtag();
+                        $hashtag->setHashtag($hashtagName);
+                        $this->entityManager->persist($hashtag);
+                    }
+
+                    $product->addHashtag($hashtag);
+                    $hashtag->addProduct($product);
+                }
+            }
+        }
+
+        if(isset($data['status'])) { 
+	    //$statusId =  (int) basename($data['status']);
+            //$status= $this->entityManager->getRepository(Status::class)->find($statusId);
+            $statusId = $data['status'];
+            $status = $this->statusRepository->find($statusId);
+	    if(!$status) {
+                return $this->json(['error' => 'Invalid status id']);
+            }
+            $product->setStatus($status);
+	}
+
+        if(isset($data['height'])) { $product->setHeight($data['height']); }
+        if(isset($data['width'])) { $product->setWidth($data['width']); }
+        if(isset($data['length'])) { $product->setLength($data['length']); }
+
+        if(isset($files['imageFile'])) {
+
+            $probando = $request->files->get('imageFile'); 
+            $temporal = $probando->getRealPath();
+            $fileName = $this->generateUniqueName($files['imageFile']->getClientOriginalName());
+
+            $image = $files['imageFile'];
+
+            $product->setImageFile($request->files->get('imageFile'));
+            //$product->setImageName($image->getClientOriginalName());
+            $product->setImageName($fileName);
+
+            copy($temporal, $this->uploadDirectory . '/' . $fileName); //$image->getClientOriginalName());
+        } else {
+            if(!isset($files['imageFile'])) {
+                $product->setImageFile(null);
+            } else {
+                return new JsonResponse(['error' => 'Content-type must be multipart/form-data on IMAGE_SET'], JsonResponse::HTTP_BAD_REQUEST);
+            }
+        }
+
+	$user = $this->security->getUser();
+
+        $product->setUser($user);
+
+            $this->entityManager->persist($product);
+	    $this->entityManager->flush();
+
 /*
-        $product->setName($request->request->get('name'))
-            ->setPrice($request->request->get('price'))
-            ->setUpdatedAt(new \DateTimeImmutable());
-        if($request->files->get('imageFile')) $product->setImageFile($request->files->get('imageFile'));
-        if($request->request->get('description')) $product->setDescription($request->request->get('description'));
-        if($request->request->get('status')) $product->setStatus($request->request->get('status'));
-        if($request->request->get('height')) $product->setHeight($request->request->get('height'));
-        if($request->request->get('width')) $product->setWidth($request->request->get('width'));
-        if($request->request->get('length')) $product->setLength($request->request->get('length'));
-	*/
-       
+        if($request->files->get('imageFile')) {
+            return $this->json(['error' => $request->files->get('imageFile')]);
+            $product->setImageFile($request->files->get('imageFile'));
+        }*/
 
         return $product;
+        } else {
+            return new JsonResponse(['error' => 'COntent-Type must be multipart/form-data on END_FILE'], JsonResponse::HTTP_BAD_REQUEST);
+        }
 
     }
 
@@ -105,5 +156,11 @@ class ProductUploadController extends AbstractController
         return $this->render('photo_upload/index.html.twig', [
             'controller_name' => 'ProductUploadController',
         ]);
+    }
+
+    public function generateUniqueName($originalFileName) {
+        $uuid = Uuid::uuid4()->toString();
+        $extension = pathinfo($originalFileName, PATHINFO_EXTENSION);
+        return $uuid . '.' . $extension;
     }
 }

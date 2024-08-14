@@ -58,6 +58,8 @@ security:
     access_control:
         # - { path: ^/admin, roles: ROLE_ADMIN }
         # - { path: ^/profile, roles: ROLE_USER }
+        - { path: ^/api/statuses, roles: ROLE_ADMIN, methods: ['POST'] }
+        - { path: ^/api/hashtags, roles: ROLE_ADMIN, methods: ['PATCH', 'DELETE'] }
         - { path: ^/api/products, roles: IS_AUTHENTICATED_FULLY }
         - { path: ^/api, roles: PUBLIC_ACCESS }
         - { path: ^/api/(login|token/refresh), roles: PUBLIC_ACCESS }

@@ -1,0 +1,9 @@
+framework:
+    serializer:
+        default_context:
+            normalization_context:
+                groups: ['read']
+                max_depth: 1
+
+            denormalization_context:
+                groups: ['write']

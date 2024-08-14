@@ -14,8 +14,8 @@ use App\Repository\HashtagRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Component\Serializer\Attribute\Groups;
-use Symfony\Component\Serializer\Attribute\MaxDepth;
+use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Serializer\Annotation\MaxDepth;
 
 #[ORM\Entity(repositoryClass: HashtagRepository::class)]
 #[ApiResource]
@@ -25,9 +25,12 @@ use Symfony\Component\Serializer\Attribute\MaxDepth;
     normalizationContext: ['groups' => ['read']],
     denormalizationContext: ['groups' => ['write']]
 )]
-#[Delete()]
+#[Delete(
+    security: "is_granted('ROLE_ADMIN')"
+)]
 #[Patch(
-    denormalizationContext: ['groups' => ['write']]
+    denormalizationContext: ['groups' => ['write']] //,
+//    security: "is_granted('ROLE_ADMIN')"
 )]
 #[ApiFilter(SearchFilter::class, properties: [
     'hashtag' => 'exact'
