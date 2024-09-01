@@ -11,6 +11,7 @@ use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
 use App\Repository\HashtagRepository;
+use App\Controller\HashtagModifyController;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -18,19 +19,22 @@ use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Serializer\Annotation\MaxDepth;
 
 #[ORM\Entity(repositoryClass: HashtagRepository::class)]
-#[ApiResource]
+#[ApiResource(
+    normalizationContext: ['groups' => ['read:hashtag']],
+    denormalizationContext: ['groups' => ['write:hashtag']]
+)]
 #[Get()]
 #[GetCollection()]
 #[Post(
-    normalizationContext: ['groups' => ['read']],
-    denormalizationContext: ['groups' => ['write']]
+    normalizationContext: ['groups' => ['read:hashtag']],
+    denormalizationContext: ['groups' => ['write:hashtag']]
 )]
 #[Delete(
     security: "is_granted('ROLE_ADMIN')"
 )]
 #[Patch(
-    denormalizationContext: ['groups' => ['write']] //,
-//    security: "is_granted('ROLE_ADMIN')"
+   // controller: HashtagModifyController::class,
+    denormalizationContext: ['groups' => ['write:hashtag']]
 )]
 #[ApiFilter(SearchFilter::class, properties: [
     'hashtag' => 'exact'
@@ -40,18 +44,18 @@ class Hashtag
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['write','read'])]
+    #[Groups(['write:hashtag','read:hashtag'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['write','read'])]
+    #[Groups(['write:hashtag','read:hashtag'])]
     private ?string $hashtag = null;
 
     /**
      * @var Collection<int, Product>
      */
     #[ORM\ManyToMany(targetEntity: Product::class, mappedBy: 'hashtags')]
-    #[Groups(['read'])]
+    #[Groups(['read:hashtag'])]
     #[MaxDepth(1)]
     private Collection $products;
 

@@ -1,0 +1,49 @@
+<?php
+
+namespace App\Controller;
+
+use App\Entity\Hashtag;
+use App\Entity\Product;
+use App\Repository\ProductRepository;
+use App\Repository\HashtagRepository;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\Routing\Attribute\Route;
+use Doctrine\ORM\EntityManagerInterface;
+
+class HashtagModifyController extends AbstractController
+{
+    private $entityManager;
+    private $hashtagRepository;
+    private $productRepository;
+
+    public function __construct(EntityManagerInterface $entityManager, ProductRepository $productRepository,
+          HashtagRepository $hashtagRepository) {
+        $this->entityManager = $entityManager;
+        $this->productRepository = $productRepository;
+        $this->hashtagRepository = $hashtagRepository;
+    }
+
+    #[Route('api/hashtags/{id}', name: 'hashtag_update', methods: ['PATCH'])]
+    #[MaxDepth(1)]
+    public function __invoke(Request $request, int $id) //: Hashtag
+    {
+        $hashtag = $this->hashtagRepository->find($id);
+
+        if(!$hashtag) return new JsonResponse(['message' => 'Hashtag not found'], Response::HTTP_NOT_FOUND);
+
+        $data = json_decode($request->getContent(), true);
+        $hashData = array_filter(explode('#', $data));
+
+        foreach($hashData as $hashtagName) {
+            $hashtagName = trim($hashtagName);
+
+            if(strpos($hashtagName, '#') ==== 0) $hashtagName = substr($hashtagName, 1);
+
+            
+        }
+    }
+
+}

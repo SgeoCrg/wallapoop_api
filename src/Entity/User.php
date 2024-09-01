@@ -85,6 +85,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['read'])]
     private $roles = [];
 
+    #[ORM\Column(nullable: true)]
+    #[Groups(['write','post','read'])]
+    private ?float $lat = null;
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['write','post','read'])]
+    private ?float $lng = null;
+
     public function __construct()
     {
         $this->products = new ArrayCollection();
@@ -194,6 +202,30 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getUserIdentifier(): string
     {
         return $this->email;
+    }
+
+    public function getLat(): ?float
+    {
+        return $this->lat;
+    }
+
+    public function setLat(?float $lat): static
+    {
+        $this->lat = $lat;
+
+        return $this;
+    }
+
+    public function getLng(): ?float
+    {
+        return $this->lng;
+    }
+
+    public function setLng(?float $lng): static
+    {
+        $this->lng = $lng;
+
+        return $this;
     }
 
 }

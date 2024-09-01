@@ -6,7 +6,6 @@ use ApiPlatform\Doctrine\Orm\Filter\DateFilter;
 use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 use ApiPlatform\Metadata\ApiFilter;
 use ApiPlatform\Metadata\ApiResource;
-use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Patch;
@@ -23,13 +22,12 @@ use Symfony\Component\Serializer\Annotation\MaxDepth;
 #[Get()]
 #[GetCollection()]
 #[Post(
-    normalizationContext: ['groups' => ['read']],
-    denormalizationContext: ['groups' => ['write']],
+    normalizationContext: ['groups' => ['read:status']],
+    denormalizationContext: ['groups' => ['write:status']],
     security: "is_granted('ROLE_ADMIN')"
 )]
-//#[Delete()]
 #[Patch(
-    denormalizationContext: ['groups' => ['write']],
+    denormalizationContext: ['groups' => ['write:status']],
     security: "is_granted('ROLE_ADMIN')"
 )]
 #[ApiFilter(SearchFilter::class, properties: [
@@ -43,7 +41,7 @@ class Status
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['write','read'])]
+    #[Groups(['write:status','read:status'])]
     private ?string $status = null;
 
     /**
