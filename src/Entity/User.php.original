@@ -12,7 +12,6 @@ use ApiPlatform\Metadata\Put;
 use App\Controller\UserController;
 use App\Controller\SingleUserController;
 use App\Controller\ChangePasswordController;
-use App\Controller\RegisterController;
 use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -23,8 +22,6 @@ use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Serializer\Annotation\MaxDepth;
 use Symfony\Component\Validator\Constraints as Assert;
-use Symfony\Component\HttpFoundation\File\File;
-use Vich\UploaderBundle\Mapping\Annotation as Vich;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ApiResource(
@@ -43,11 +40,9 @@ use Vich\UploaderBundle\Mapping\Annotation as Vich;
         ),
         new Post(
             uriTemplate: 'users',
-            controller: RegisterController::class,
-            normalizationContext: ['groups' => ['post:user']],
-            denormalizationContext: ['groups' => ['post:user']],
-            name: 'user_post',
-            deserialize: false
+            normalizationContext: ['groups' => ['post']],
+            denormalizationContext: ['group' => ['post']],
+            name: 'post'
         ),
         new Patch(
             uriTemplate: 'users/update/{id}',
@@ -62,7 +57,6 @@ use Vich\UploaderBundle\Mapping\Annotation as Vich;
     normalizationContext: ['groups' => ['read:user']],
     denormalizationContext: ['groups' => ['write:user']]
 )]
-#[Vich\Uploadable]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
@@ -72,11 +66,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['write:user','read:user', 'post:user', 'patch'])]
+    #[Groups(['write:user','read:user', 'post', 'patch'])]
     private ?string $name = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['write:user','read:user','post:user'])]
+    #[Groups(['write:user','read:user','post'])]
     private ?string $email = null;
 
     /**
@@ -88,7 +82,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private Collection $products;
 
     #[ORM\Column]
-    #[Assert\NotBlank(groups: ['write:user','post:user','patch'])]
+    #[Assert\NotBlank(groups: ['write:user','post','patch'])]
     #[Assert\Length(
         min: 4,
         max: 20,
@@ -96,7 +90,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         maxMessage: 'Your password cannot be longer than {{ limit }} characters',
         groups: ['write:user','patch']
     )]
-    #[Groups(['write:user','post:user','read:user','patch'])]
+    #[Groups(['write','post','read','patch'])]
     private ?string $password = null;
 
     #[ORM\Column(type: 'json')]
@@ -104,59 +98,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private $roles = [];
 
     #[ORM\Column(nullable: true)]
-    #[Groups(['write:user','post:user','read:user'])]
+    #[Groups(['write:user','post','read:user'])]
     private ?float $lat = null;
 
     #[ORM\Column(nullable: true)]
-    #[Groups(['write:user','post:user','read:user'])]
+    #[Groups(['write:user','post','read:user'])]
     private ?float $lng = null;
-
-    #[ORM\Column(nullable:true)]
-    #[Groups(['write:user', 'post:user', 'read:user', 'patch'])]
-    private ?string $avatar = null;
-
-    #[Vich\UploadableField(mapping: 'user_avatar', fileNameProperty: 'avatar')]
-    #[Groups(['write:user', 'post:user', 'patch'])]
-    private ?File $avatarFile = null;
-
-    #[ORM\Column(type: 'datetime', nullable: true)]
-    private ?\DateTimeInterface $updatedAt = null;
-
-    public function setAvatarFile(?File $imageFile = null): static
-    {
-        $this->avatarFile = $imageFile;
-
-        if(null !== $imageFile) {
-            $this->updatedAt = new \DateTimeImmutable();
-        }
-
-        return $this;
-    }
-
-    public function getAvatarFile(): ?File 
-    {
-        return $this->avatarFile;
-    }
-
-    public function setAvatar(?string $imageName): void
-    {
-        $this->avatar = $imageName;
-    }
-
-    public function getAvatar(): ?string
-    {
-        return $this->avatar;
-    }
-
-    public function setUpdatedAt(?\DateTimeInterface $updatedAt): void
-    {
-        $this->updatedAt = $updatedAt;
-    }
-
-    public function getUpdatedAt(): ?\DateTimeInterface
-    {
-        return $this->updatedAt;
-    }
 
     public function __construct()
     {

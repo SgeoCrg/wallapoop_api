@@ -2,7 +2,7 @@ monolog:
     handlers:
         main:
             type: fingers_crossed
-            action_level: error
+            action_level: info #error
             handler: nested
             #path: "%kernel.logs_dir%/%kernel.environment%.log"
             #level: error
@@ -11,4 +11,4 @@ monolog:
         nested:
             type: stream
             path: '%kernel.logs_dir%/%kernel.environment%.log'
-            level: debug
+            level: info #debug

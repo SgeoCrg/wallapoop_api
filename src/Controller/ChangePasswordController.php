@@ -25,6 +25,14 @@ class ChangePasswordController extends AbstractController
             return $this->changePasswordHandler->updateName($data, $requestData['name']);
         }
 
+       // if (isset($requestData['avatar'])) {
+       if (isset($files['avatar'])) {
+            return $this->changePasswordHandler->updateAvatar($data, $requestData['avatar']);
+        //$file = $request->files->get('avatar');
+        //if($file instanceof UploadedFile) {
+        //    return $this->changePasswordHandler->updateAvatar($data, $file);
+        }
+
         return $data;
         /*if (null === $request->request->get('name')) {
             if (null === $request->request->get('password'))

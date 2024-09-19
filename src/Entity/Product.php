@@ -15,6 +15,7 @@ use ApiPlatform\Metadata\Post;
 use App\Controller\ProductController;
 use App\Controller\ProductModifyController;
 use App\Controller\ProductUploadController;
+use App\Controller\SingleProductController;
 use App\Entity\Traits\CommonDate;
 use App\Repository\ProductRepository;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -23,6 +24,7 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Serializer\Annotation\MaxDepth;
+use Symfony\Component\Security\Core\Security;
 use Symfony\Component\Validator\Constraints as Assert;
 use Vich\UploaderBundle\Mapping\Annotation as Vich;
 
@@ -33,7 +35,10 @@ use Vich\UploaderBundle\Mapping\Annotation as Vich;
             controller: ProductController::class,
             deserialize: false,
         ),
-        new Get(),
+        new Get(
+            controller: SingleProductController::class,
+            deserialize: false,
+        ),
         new Post(
             controller: ProductUploadController::class,
             deserialize: false,
@@ -58,6 +63,7 @@ use Vich\UploaderBundle\Mapping\Annotation as Vich;
 class Product
 {
     use CommonDate;
+    private $security;
 
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -86,7 +92,7 @@ class Product
     #[ORM\ManyToOne(inversedBy: 'products')]
     #[ORM\JoinColumn(nullable: false)]
     #[Groups(['read:product'])]
-    #[MaxDepth(1)]
+    #[MaxDepth(2)]
     private ?User $user = null;
 
     /**
@@ -94,12 +100,12 @@ class Product
      */
     #[ORM\ManyToMany(targetEntity: Hashtag::class, inversedBy: 'products')]
     #[Groups(['write:product', 'read:product'])]
-    #[MaxDepth(1)]
+    #[MaxDepth(2)]
     private Collection $hashtags;
 
     #[ORM\ManyToOne(inversedBy: 'products')]
     #[Groups(['write:product', 'read:product'])]
-    #[MaxDepth(1)]
+    #[MaxDepth(2)]
     private ?Status $status = null;
 
     #[ORM\Column(nullable: true)]
@@ -122,8 +128,20 @@ class Product
     #[Groups(['write:product'])]
     private ?File $imageFile = null;
 
+    #[Groups(['read:product'])]
+    private ?bool $mine = false;
+
+    public function getMine(): bool {
+        return $this->mine;
+    }
+
+    public function setMine(bool $mine): bool {
+        $this->mine = mine;
+    }
+
     public function __construct() {
         $this->hashtags = new ArrayCollection();
+        $this->mine = false;
     }
 
     public function getId(): ?int

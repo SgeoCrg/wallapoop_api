@@ -35,4 +35,22 @@ class ChangePasswordHandler
         $this->entityManager->flush();
         return $data;
     }
+
+    public function updateAvatar($data, $avatar)
+    {
+        $probando = $avatar->files->get('avatar');
+        $temporal = $probando->getRealPath();
+        $fileName = $this->generateUniqueName($avatar['avatar']->getClientOriginalName());
+
+        $image = $avatar['avatar'];
+        $data->setAvatar($avatar->files->get('avatar'));
+        $data->setAvatarName($fileName);
+
+        copy($temporal, $this->uploadDirectory . '/' . $fileName);
+
+        $this->entityManager->flush();
+
+        return $data;
+    }
+
 }

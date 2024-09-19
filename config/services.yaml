@@ -19,6 +19,13 @@ services:
             - '../src/DependencyInjection/'
             - '../src/Entity/'
             - '../src/Kernel.php'
+    App\Controller\:
+            resource: '../src/Controller/'
+            tags: ['controller.service_arguments']
+    App\EventSubscriber\ProductSubscriber:
+        tags:
+            - { name: 'kernel.event_subscriber' }
+
 #lo quito por que en el original no está
     #App\Controller\ProductUploadController:
         #arguments:
