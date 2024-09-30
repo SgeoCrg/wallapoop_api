@@ -73,7 +73,7 @@ class RegisterController extends AbstractController
                 copy($temporal, $this->uploadDirectory . '/' . $avatarName);
             } else {
                 if(!isset($files['avatar'])) {
-                    $user->setAvatarFile(null);
+                    $user->setAvatar('c0cab341-d8c6-4c5a-affd-53ad4bee65f0.jpeg');
                 } else {
                     return new JsonResponse(['error' => 'Content-Type must be multipart/form-data on IMAGE_SET'], JsonResponse::HTTP_BAD_REQUeST);
                 }

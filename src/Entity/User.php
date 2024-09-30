@@ -49,13 +49,14 @@ use Vich\UploaderBundle\Mapping\Annotation as Vich;
             name: 'user_post',
             deserialize: false
         ),
-        new Patch(
-            uriTemplate: 'users/update/{id}',
+        new Put(
+            uriTemplate: 'users/{id}',
             controller: ChangePasswordController::class,
-            normalizationContext: ['groups' => ['patch']],
-            denormalizationContext: ['groups' => ['patch']],
+            normalizationContext: ['groups' => ['patch:user']],
+            denormalizationContext: ['groups' => ['patch:user']],
             validate: false,
-            name: 'change_password'
+            name: 'user_update',
+            deserialize: false
         ),
         new Delete()
     ],
@@ -72,7 +73,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['write:user','read:user', 'post:user', 'patch'])]
+    #[Groups(['write:user','read:user', 'post:user', 'patch:user'])]
     private ?string $name = null;
 
     #[ORM\Column(length: 255)]
@@ -88,7 +89,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private Collection $products;
 
     #[ORM\Column]
-    #[Assert\NotBlank(groups: ['write:user','post:user','patch'])]
+    #[Assert\NotBlank(groups: ['write:user','post:user','patch:user'])]
     #[Assert\Length(
         min: 4,
         max: 20,
@@ -96,7 +97,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         maxMessage: 'Your password cannot be longer than {{ limit }} characters',
         groups: ['write:user','patch']
     )]
-    #[Groups(['write:user','post:user','read:user','patch'])]
+    #[Groups(['write:user','post:user','read:user','patch:user'])]
     private ?string $password = null;
 
     #[ORM\Column(type: 'json')]
@@ -112,11 +113,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?float $lng = null;
 
     #[ORM\Column(nullable:true)]
-    #[Groups(['write:user', 'post:user', 'read:user', 'patch'])]
+    #[Groups(['write:user', 'post:user', 'read:user', 'patch:user'])]
     private ?string $avatar = null;
 
     #[Vich\UploadableField(mapping: 'user_avatar', fileNameProperty: 'avatar')]
-    #[Groups(['write:user', 'post:user', 'patch'])]
+    #[Groups(['write:user', 'post:user', 'patch:user'])]
     private ?File $avatarFile = null;
 
     #[ORM\Column(type: 'datetime', nullable: true)]

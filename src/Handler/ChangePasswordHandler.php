@@ -38,7 +38,15 @@ class ChangePasswordHandler
 
     public function updateAvatar($data, $avatar)
     {
-        $probando = $avatar->files->get('avatar');
+        //$uploadedFile = $avatar->files->get('avatar');
+        //if(uploadedFile instanceof UploadedFile) {
+            $fileName = $this->generateUniqueName($avatar->getClientOriginalName());
+            $avatar->move($this->uploadDirectory, $fileName);
+
+            $data->setAvatar($fileName);
+            $this->entityManager->flush();
+       // }
+       /* $probando = $avatar->files->get('avatar');
         $temporal = $probando->getRealPath();
         $fileName = $this->generateUniqueName($avatar['avatar']->getClientOriginalName());
 
@@ -48,7 +56,7 @@ class ChangePasswordHandler
 
         copy($temporal, $this->uploadDirectory . '/' . $fileName);
 
-        $this->entityManager->flush();
+        $this->entityManager->flush();*/
 
         return $data;
     }
